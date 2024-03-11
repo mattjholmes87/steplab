@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+    <h1>Login</h1>
+
+    <div style="max-width:400px">
+        <form method="POST">
+
+            <div class="form-group">
+                <label for="user" class="d-block">User</label>
+                <select name="user" class="form-control form-control-lg" id="user" required>
+                    <option value="" disabled selected>[Pick a user]</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}">[{{ u.username }}] {{ u.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button class="btn btn-primary btn-block">Login</button>
+            </div>
+
+        </form>
+
+    </div>
+{% endblock %}

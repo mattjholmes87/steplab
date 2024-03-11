@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block scripts %}
+    <script>
+        function add_goal() {
+            const text = prompt('What is the name of your goal?');
+            if (text.length) {
+                $.ajax({
+                    url: '{{ request.path }}',
+                    type: 'POST',
+                    data: {'new_goal_text': text},
+                }).done(function (server_data) {
+                    if (server_data.result === 'ok') {
+                        // redirect
+                        window.location.href = server_data.redirect_url;
+                    } else {
+                        // display user allowed error
+                        alert('Sorry something went wrong - ' + server_data.message);
+                    }
+                }).fail(function () {
+                    // generic error
+                    alert('Sorry! Something went very wrong.')
+                });
+            }
+        }
+    </script>
+{% endblock %}
+
+{% block page_content %}
+
+    <h2 class="mb-3">Goals</h2>
+
+    <div class="row row-cols-3 row-cols-md-2">
+        {% for goal in goals %}
+            <div class="col-md-4 mb-4">
+                <div class="card {% if goal.completed %}bg-success text-white{% endif %}">
+                    <div class="card-body">
+                        <a href="{{ url_for('goals.view_goal', goal_id=goal.id) }}">
+                            <h5 class="card-title">{{ goal.text }}</h5>
+                        </a>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ goal.percentage_complete }}%"
+                                 aria-valuenow="{{ goal.percentage_complete }}" aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <a href="{{ url_for('goals.view_goal', goal_id=goal.id) }}"
+                           class="stretched-link btn btn-sm btn-block {% if goal.completed %}bg-white text-success{% endif %}">Go</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <button class="btn btn-sm btn-block btn-dark" onclick="add_goal()">+ New goal</button>
+        </div>
+    </div>
+{% endblock %}

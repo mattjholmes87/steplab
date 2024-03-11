@@ -1,0 +1,257 @@
+{% extends "base.html" %} {% block styles %} {# CSS HERE #}
+<style>
+  .card {
+    border-right: 0;
+  }
+
+  .card .card-body {
+    padding-right: 0 !important;
+  }
+
+  .sub-card {
+    border-left-width: 5px;
+  }
+</style>
+{% endblock %} {% block scripts %} {# JAVASCRIPT HERE #}
+
+<script>
+  function add_action(elem, base_action_id) {
+    base_action_id =
+      base_action_id ||
+      $(elem).closest("[data-action-id]").attr("data-action-id");
+    const text = prompt(
+      `What is the name of your ${
+        base_action_id !== "_base" ? "sub-" : ""
+      }action?`
+    );
+    if (text.length) {
+      $.ajax({
+        url: "{{ request.path }}",
+        type: "POST",
+        data: {
+          task: "create_action",
+          new_action_text: text,
+          base_action_id: base_action_id,
+        },
+      })
+        .done(function (server_data) {
+          if (server_data.result === "ok") {
+            // reload
+            window.location.reload();
+          } else {
+            // display user allowed error
+            alert("Sorry something went wrong - " + server_data.message);
+          }
+        })
+        .fail(function () {
+          // generic error
+          alert("Sorry! Something went very wrong.");
+        });
+    }
+  }
+
+  function delete_action(elem) {
+    const action_id = $(elem)
+      .closest("[data-action-id]")
+      .attr("data-action-id");
+    if (confirm("Delete this action?")) {
+      $.ajax({
+        url: "{{ request.path }}",
+        type: "POST",
+        data: { task: "delete_action", action_id: action_id },
+      })
+        .done(function (server_data) {
+          if (server_data.result === "ok") {
+            // reload
+            window.location.reload();
+          } else {
+            // display user allowed error
+            alert("Sorry something went wrong - " + server_data.message);
+          }
+        })
+        .fail(function () {
+          // generic error
+          alert("Sorry! Something went very wrong.");
+        });
+    }
+  }
+
+  function mark_action_as_complete(elem) {
+    const action_id = $(elem)
+      .closest("[data-action-id]")
+      .attr("data-action-id");
+    if (confirm("Mark action as complete?")) {
+      $.ajax({
+        url: "{{ request.path }}",
+        type: "POST",
+        data: { task: "mark_action_as_complete", action_id: action_id },
+      })
+        .done(function (server_data) {
+          if (server_data.result === "ok") {
+            // reload
+            window.location.reload();
+          } else {
+            // display user allowed error
+            alert("Sorry something went wrong - " + server_data.message);
+          }
+        })
+        .fail(function () {
+          // generic error
+          alert("Sorry! Something went very wrong.");
+        });
+    }
+  }
+
+  function unmark_action_as_complete(elem) {
+    const action_id = $(elem)
+      .closest("[data-action-id]")
+      .attr("data-action-id");
+
+    if (confirm("Unmark action as complete?")) {
+      $.ajax({
+        url: "{{ request.path }}",
+        type: "POST",
+        data: { task: "unmark_action_as_complete", action_id: action_id },
+      })
+        .done(function (server_data) {
+          if (server_data.result === "ok") {
+            window.location.reload();
+          } else {
+            // display user allowed error
+            alert("Sorry something went wrong - " + server_data.message);
+          }
+        })
+        .fail(function () {
+          // generic error
+          alert("Sorry! Something went very wrong.");
+        });
+    }
+  }
+
+  function delete_goal() {
+    if (confirm("Delete this goal?")) {
+      $.ajax({
+        url: "{{ request.path }}",
+        type: "POST",
+        data: { task: "delete_goal" },
+      })
+        .done(function (server_data) {
+          if (server_data.result === "ok") {
+            // reload
+            window.location.href = "/";
+          } else {
+            // display user allowed error
+            alert("Sorry something went wrong - " + server_data.message);
+          }
+        })
+        .fail(function () {
+          // generic error
+          alert("Sorry! Something went very wrong.");
+        });
+    }
+  }
+</script>
+{% endblock %} {# defining recursive macro function to display actions #} {%
+macro render_action(action, sub=False) %}
+<div
+  class="card mb-3 mt-4 {% if sub %} sub-card {% else %}mt-5{% endif %}"
+  data-action-id="{{ action.id }}"
+>
+  <div class="card-header">
+    {# buttons #}
+    <span class="float-right">
+      {% if action.completed %}
+      <button
+        class="btn btn-success btn-sm"
+        onclick="unmark_action_as_complete(this)"
+      >
+        Completed
+      </button>
+      {% else %}
+      <button
+        class="btn btn-outline-dark btn-sm"
+        onclick="mark_action_as_complete(this)"
+      >
+        Mark as complete
+      </button>
+      {% endif %}
+
+      <button class="btn btn-outline-dark btn-sm" onclick="delete_action(this)">
+        Delete
+      </button>
+    </span>
+
+    {# checkbox #}
+    <span style="width: 20px">
+      {% if action.completed %}&#9745;{% else %}&#9744;{% endif %}
+    </span>
+
+    {# action text #}
+    <button
+      class="btn btn-link"
+      data-toggle="collapse"
+      data-target="#actions_{{ action.id }}"
+    >
+      {{ action.text }}
+    </button>
+  </div>
+
+  {# display sub-actions #}
+  <div
+    class="collapse {% if action.child_actions %}show{% else %}collapsed{% endif %}"
+    id="actions_{{ action.id }}"
+  >
+    <div class="card-body pt-1">
+      {% for a in action.child_actions %}
+      <div class="pl-3 mt-3">{{ render_action(a, sub=True) }}</div>
+      {% endfor %}
+      <button
+        class="btn btn-link text-dark btn-sm mt-3 d-block ml-3"
+        onclick="add_action(this)"
+      >
+        + Sub-action
+      </button>
+    </div>
+  </div>
+</div>
+{% endmacro %} {% block page_content %} {# HTML HERE #} {# top buttons #}
+<span class="float-right">
+  <button onclick="delete_goal()" class="btn btn-outline-dark">
+    Delete goal
+  </button>
+  <a href="{{ url_for('goals.home') }}" class="btn btn-outline-dark">Back</a>
+</span>
+
+{# page title #}
+<h2 class="mb-3">
+  {{ goal.text }} {% if goal.completed %}<i class="fas fa-check"></i>{% endif %}
+</h2>
+
+{# progress bar #}
+<div class="progress">
+  <div
+    class="progress-bar"
+    role="progressbar"
+    style="width: {{ goal.percentage_complete }}%"
+    aria-valuenow="{{ goal.percentage_complete }}"
+    aria-valuemin="0"
+    aria-valuemax="100"
+  >
+    {{ goal.percentage_complete|round|int }}%
+  </div>
+</div>
+
+{# goal html content #}
+<div id="actions_html" class="mb-5">
+  {# render actions using macro above (line 134) #} {% for action in
+  goal.base_actions %} {{ render_action(action, sub=False) }} {% endfor %}
+
+  <button
+    class="btn btn-link text-dark mt-3"
+    onclick="add_action(this, '_base')"
+  >
+    + Action
+  </button>
+</div>
+
+{% endblock %}
