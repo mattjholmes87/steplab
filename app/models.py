@@ -75,7 +75,7 @@ class Goal(db.Model):
         if self.actions.filter(GoalAction.completed).count() == 0:
             self.percentage_complete = 0
         else:
-            total = self.base_actions.count()
+            total = self.actions.filter(GoalAction.goal_id).count()
             completed = self.actions.filter(GoalAction.completed).count() # <-- insert result here
             self.percentage_complete = round(completed/total * 100)
             if completed/total == 1:
@@ -83,6 +83,7 @@ class Goal(db.Model):
             else:
                 self.completed = None
         return self.percentage_complete
+    
 
     def delete_goal(self):
         db.session.delete(self)
